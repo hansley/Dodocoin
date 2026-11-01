@@ -52,6 +52,18 @@ footer{font-size:12px;color:#91a6be;margin:22px 0}
 <form id="transfer-form"><div class="two"><label>From<select name="sender" id="sender" required></select></label><label>To<select name="recipient" id="recipient" required></select></label></div><label>Amount (DDC)<input name="amount" value="25" type="text" inputmode="decimal" required></label><button type="submit">Send test coins →</button></form></div>
 </section>
 <section class="columns"><div class="card"><h2>Pending cross-shard receipts</h2><div id="receipts"></div></div><div class="card"><h2>Activity log</h2><div id="events"></div></div></section>
-<p id="message" role="status" aria-live="polite"></p>
+<section class="card" id="algorithm-lab" aria-labelledby="lab-title">
+<div class="section"><div><span class="eyebrow">Measured benchmark</span><h2 id="lab-title">Algorithm Lab · SHA-256 sharding</h2></div><span class="pill">SIMULATED WORKLOAD</span></div>
+<p class="muted">10,000 generated transactions · 25% cross-shard · seed 20261101 · no injected faults · separate isolated ledger.</p>
+<div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><button id="run-benchmark" type="button">▶ Run actual benchmark</button><span id="lab-status" class="muted" role="status">Not run yet — no measured results available.</span></div>
+<div class="metrics" id="lab-results" style="margin:18px 0 0" hidden>
+<div class="card"><div class="metric-label">MEASURED · Completed TPS</div><div class="metric-value" id="lab-tps">—</div></div>
+<div class="card"><div class="metric-label">MEASURED · Wall time</div><div class="metric-value" id="lab-wall">—</div></div>
+<div class="card"><div class="metric-label">MEASURED · P95 transfer</div><div class="metric-value" id="lab-p95">—</div></div>
+<div class="card"><div class="metric-label">CHECKED · Supply conservation</div><div class="metric-value" id="lab-correct">—</div></div>
+</div>
+<p class="muted" id="lab-detail"></p>
+<p class="muted" style="font-size:12px;margin-top:8px">Measurements come from the local Python process (including receipt settlement in TPS). Not network throughput or block finality; transfer P95 excludes receipt settlement.</p>
+</section><p id="message" role="status" aria-live="polite"></p>
 <footer>Educational in-memory prototype. No real funds, signatures, validator consensus or persisted blockchain data. Restarting the server resets accounts.</footer>
 </main><script src="/dashboard.js" defer></script></body></html>
