@@ -111,3 +111,35 @@ $("transfer-form").addEventListener("submit", async (e) => {
 });
 $("refresh").addEventListener("click", refresh);
 refresh();
+
+function showBenchmark(result) {
+  if (!result) return;
+  const m = result.measured_local_execution;
+  $("lab-results").hidden = false;
+  $("lab-tps").textContent = m.completed_tps.toLocaleString(undefined,{maximumFractionDigits:0});
+  $("lab-wall").textContent = m.wall_seconds.toFixed(3) + " s";
+  $("lab-p95").textContent = m.transfer_latency_p95_ms.toFixed(3) + " ms";
+  $("lab-correct").textContent = result.correctness.passed ? "PASS" : "FAIL";
+  $("lab-status").textContent = "Completed on this local machine";
+  $("lab-detail").textContent = "SIMULATED: " + result.simulated_workload.generated_transactions +
+    " transactions (" + result.simulated_workload.cross_shard_transactions + " cross-shard). " +
+    "MEASURED: settlements " + m.receipt_settlements + "; source-shard counts " +
+    m.source_transactions_per_shard.join(" / ") + ".";
+}
+$("run-benchmark").addEventListener("click", async () => {
+  const button = $("run-benchmark");
+  button.disabled = true;
+  $("lab-status").textContent = "Executing real local benchmark…";
+  try {
+    const data = await api("/api/benchmark", {
+      category:"sharding",algorithm:"sha",transactions:10000,
+      cross_percent:25,seed:20261101,fault:"none"
+    });
+    showBenchmark(data.result);
+  } catch (err) {
+    $("lab-status").textContent = "Benchmark failed: " + err.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+api("/api/benchmark").then(data => showBenchmark(data.result)).catch(() => {});
