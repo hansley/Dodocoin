@@ -6,12 +6,15 @@ import json
 import threading
 
 from dodocoin import ShardedLedger, shard_for
+from algorithm_lab import run_benchmark
 
 HOST = "127.0.0.1"
 PORT = 8765
 ledger = ShardedLedger()
 operation_lock = threading.RLock()
 events = []
+benchmark_result = None
+benchmark_lock = threading.Lock()
 
 def record(kind, detail):
     events.append({"id": len(events) + 1, "type": kind, "detail": detail})
@@ -48,6 +51,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/state":
             with operation_lock:
                 self._json(200, {"ledger": ledger.snapshot(), "events": list(reversed(events))})
+        elif path == "/api/benchmark":
+            with benchmark_lock:
+                self._json(200, {"result": benchmark_result})
         elif path == "/dashboard.js":
             data = (Path(__file__).resolve().parent / "dashboard.js").read_bytes()
             self.send_response(200)
@@ -60,7 +66,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
-        if path not in ("/api/accounts", "/api/transfers", "/api/settle"):
+        if path not in ("/api/accounts", "/api/transfers", "/api/settle", "/api/benchmark"):
             return self._json(404, {"error": "Not found"})
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -69,6 +75,19 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(length))
             if not isinstance(payload, dict):
                 raise ValueError("Expected a JSON object")
+            if path == "/api/benchmark":
+                # Run against a separate ledger, never the dashboard account balances.
+                if payload != {"category": "sharding", "algorithm": "sha", "transactions": 10000,
+                               "cross_percent": 25, "seed": 20261101, "fault": "none"}:
+                    raise ValueError("Only the fixed 10,000-transaction SHA benchmark is supported")
+                if not benchmark_lock.acquire(blocking=False):
+                    return self._json(409, {"error": "Benchmark already running"})
+                try:
+                    global benchmark_result
+                    benchmark_result = run_benchmark(10000, 25, 20261101)
+                    return self._json(200, {"result": benchmark_result})
+                finally:
+                    benchmark_lock.release()
             with operation_lock:
                 if path == "/api/accounts":
                     name = payload["name"]
